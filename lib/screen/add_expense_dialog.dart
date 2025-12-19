@@ -146,28 +146,64 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
                 },
               ),
               const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                value: _selectedCategory,
-                decoration: InputDecoration(
-                  labelText: "Category",
-                  prefixIcon: const Icon(Icons.category),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                items:
-                    ['Food', 'Transport', 'Shopping', 'Entertainment', 'Others']
+              Consumer<ExpenseProvider>(
+                builder: (context, provider, child) {
+                  final categories = [...provider.categories, 'Add More...'];
+
+                  // Ensure selected category is valid
+                  if (!categories.contains(_selectedCategory)) {
+                    _selectedCategory = provider.categories.first;
+                  }
+
+                  return DropdownButtonFormField<String>(
+                    value: _selectedCategory,
+                    decoration: InputDecoration(
+                      labelText: "Category",
+                      prefixIcon: const Icon(Icons.category),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    items: categories
                         .map(
                           (category) => DropdownMenuItem(
                             value: category,
-                            child: Text(category),
+                            child: Row(
+                              children: [
+                                if (category == 'Add More...')
+                                  const Icon(
+                                    Icons.add_circle_outline,
+                                    size: 18,
+                                    color: Colors.deepPurple,
+                                  ),
+                                if (category == 'Add More...')
+                                  const SizedBox(width: 8),
+                                Text(
+                                  category,
+                                  style: TextStyle(
+                                    color: category == 'Add More...'
+                                        ? Colors.deepPurple
+                                        : null,
+                                    fontWeight: category == 'Add More...'
+                                        ? FontWeight.bold
+                                        : null,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         )
                         .toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedCategory = value!;
-                  });
+                    onChanged: (value) {
+                      if (value == 'Add More...') {
+                        _showAddCategoryDialog(context, provider);
+                      } else {
+                        setState(() {
+                          _selectedCategory = value!;
+                        });
+                      }
+                    },
+                  );
                 },
               ),
               const SizedBox(height: 12),
@@ -227,6 +263,59 @@ class _AddExpenseDialogState extends State<AddExpenseDialog> {
           child: Text(widget.isEdit ? "Update" : "Add"),
         ),
       ],
+    );
+  }
+
+  void _showAddCategoryDialog(BuildContext context, ExpenseProvider provider) {
+    final categoryController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          "Add New Category",
+          style: TextStyle(
+            color: Colors.deepPurple,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: TextField(
+          controller: categoryController,
+          decoration: InputDecoration(
+            labelText: "Category Name",
+            prefixIcon: const Icon(Icons.category),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.deepPurple,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            onPressed: () async {
+              final newCategory = categoryController.text.trim();
+              if (newCategory.isNotEmpty) {
+                await provider.addCategory(newCategory);
+                Navigator.pop(dialogContext);
+                setState(() {
+                  _selectedCategory = newCategory;
+                });
+              }
+            },
+            child: const Text("Add"),
+          ),
+        ],
+      ),
     );
   }
 }

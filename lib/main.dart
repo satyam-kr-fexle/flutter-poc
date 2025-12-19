@@ -2,25 +2,36 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:learningday1/provider/count_provider.dart';
-import 'package:learningday1/provider/expense_provider.dart'; // Import
+import 'package:learningday1/provider/expense_provider.dart';
 import 'package:learningday1/provider/favourite_provider.dart';
 import 'package:learningday1/provider/theme_provider.dart';
+import 'package:learningday1/provider/user_provider.dart';
 import 'package:learningday1/screen/component_flutter.dart';
 import 'package:learningday1/screen/expenses_screen.dart';
 import 'package:learningday1/screen/favourite_list.dart';
 import 'package:learningday1/screen/favourite_screen.dart';
 import 'package:learningday1/screen/splash_screen.dart';
+import 'package:learningday1/screen/users_screen.dart';
+import 'package:learningday1/services/user_sync_service.dart';
 import 'package:provider/provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'screen/home_body.dart';
 import 'screen/custom_page.dart';
 import 'screen/count_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
   if (!kIsWeb && (Platform.isWindows || Platform.isLinux)) {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
   }
+
+  // Initialize background sync service (only on mobile)
+  if (!kIsWeb) {
+    await UserSyncService.initialize();
+  }
+
   runApp(const MyApp());
 }
 
@@ -34,7 +45,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => FavouriteProvider()),
         ChangeNotifierProvider(create: (_) => CountProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProvider(create: (_) => ExpenseProvider()), // Register
+        ChangeNotifierProvider(create: (_) => ExpenseProvider()),
+        ChangeNotifierProvider(create: (_) => UserProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
@@ -126,6 +138,7 @@ class _MainPageState extends State<MainPage> {
     _pages.add(const FavouriteScreen()); // 2
     _pages.add(const FlutterComponent()); // 3
     _pages.add(const CounterScreen()); // 4
+    _pages.add(const UsersScreen()); // 5
   }
 
   @override
@@ -163,6 +176,7 @@ class _MainPageState extends State<MainPage> {
           ),
           BottomNavigationBarItem(icon: Icon(Icons.tab), label: 'Tab'),
           BottomNavigationBarItem(icon: Icon(Icons.add), label: 'Counter'),
+          BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Users'),
         ],
       ),
     );

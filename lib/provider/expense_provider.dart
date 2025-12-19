@@ -9,9 +9,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ExpenseProvider with ChangeNotifier {
   List<Expense> _expenses = [];
   bool _isLoading = false;
+  List<String> _categories = [
+    'Food',
+    'Transport',
+    'Shopping',
+    'Entertainment',
+    'Others',
+  ];
 
   List<Expense> get expenses => _expenses;
   bool get isLoading => _isLoading;
+  List<String> get categories => _categories;
 
   Future<void> fetchExpenses() async {
     _isLoading = true;
@@ -29,6 +37,8 @@ class ExpenseProvider with ChangeNotifier {
         // Mobile/Desktop: Load from SQLite
         _expenses = await ExpenseDatabase.instance.readAllExpenses();
       }
+      // Load custom categories
+      await _loadCategories();
     } catch (e) {
       print("Error fetching expenses: $e");
     } finally {
@@ -140,5 +150,32 @@ class ExpenseProvider with ChangeNotifier {
       }
     }
     return totals;
+  }
+
+  // Load categories from SharedPreferences
+  Future<void> _loadCategories() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? categoriesString = prefs.getString('custom_categories');
+    if (categoriesString != null) {
+      final List<dynamic> jsonList = jsonDecode(categoriesString);
+      _categories = jsonList.cast<String>();
+    }
+  }
+
+  // Save categories to SharedPreferences
+  Future<void> _saveCategories() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String encodedData = jsonEncode(_categories);
+    await prefs.setString('custom_categories', encodedData);
+  }
+
+  // Add a new custom category
+  Future<void> addCategory(String category) async {
+    if (category.trim().isEmpty || _categories.contains(category)) {
+      return;
+    }
+    _categories.add(category);
+    await _saveCategories();
+    notifyListeners();
   }
 }

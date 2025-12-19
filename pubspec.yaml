@@ -41,6 +41,10 @@ dependencies:
   path: ^1.8.3
   intl: ^0.18.1
   shared_preferences: ^2.2.0
+  http: ^1.1.0
+  workmanager: ^0.5.2
+  connectivity_plus: ^5.0.2
+  cron: ^0.6.0
 
 dev_dependencies:
   flutter_test:
