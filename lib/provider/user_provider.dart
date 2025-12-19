@@ -101,7 +101,7 @@ class UserProvider with ChangeNotifier {
 
     // Schedule cron job to run every 2 minutes
     // Cron format: "*/2 * * * *" means every 2 minutes
-    _cron.schedule(Schedule.parse('*/2 * * * *'), () async {
+    _cron.schedule(Schedule.parse('*/1 * * * *'), () async {
       print('Cron job triggered at ${DateTime.now()}');
       await _syncUsers();
     });
