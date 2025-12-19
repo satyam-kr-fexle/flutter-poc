@@ -39,7 +39,7 @@ class _UsersScreenState extends State<UsersScreen> {
         elevation: 0,
         backgroundColor: Colors.deepPurple,
         title: const Text(
-          "Users",
+          "Sync Users (CRON Job)",
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
