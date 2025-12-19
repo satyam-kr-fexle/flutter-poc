@@ -11,6 +11,8 @@ class UsersScreen extends StatefulWidget {
 }
 
 class _UsersScreenState extends State<UsersScreen> {
+  final TextEditingController _searchController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -20,6 +22,12 @@ class _UsersScreenState extends State<UsersScreen> {
       provider.fetchUsers(); // Load from local storage
       provider.startAutoSync(); // Start automatic background sync
     });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -65,95 +73,148 @@ class _UsersScreenState extends State<UsersScreen> {
             );
           }
 
-          if (provider.users.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.people_outline,
-                    size: 80,
-                    color: Colors.grey,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No users yet',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Users will sync automatically from API',
-                    style: TextStyle(color: Colors.grey),
-                  ),
-                  if (provider.isSyncing)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 16),
-                      child: CircularProgressIndicator(),
-                    ),
-                ],
-              ),
-            );
-          }
+          final displayUsers = provider.users;
+          final query = provider.searchQuery;
+          final isQueryEmpty = query.isEmpty;
+          final hasNoUsers = displayUsers.isEmpty;
 
           return Column(
             children: [
-              // Status bar
-              Container(
-                padding: const EdgeInsets.all(12),
-                color: Colors.deepPurple.shade50,
-                child: Row(
-                  children: [
-                    const Icon(Icons.cloud_done, size: 16, color: Colors.green),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        '${provider.users.length} users synced from API',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey[800],
-                          fontWeight: FontWeight.w500,
+              // Search Bar (Always Visible)
+              Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (value) => provider.setSearchQuery(value),
+                  decoration: InputDecoration(
+                    hintText: 'Search by name...',
+                    prefixIcon: const Icon(
+                      Icons.search,
+                      color: Colors.deepPurple,
+                    ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(30),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 0,
+                    ),
+                    suffixIcon: !isQueryEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 20),
+                            onPressed: () {
+                              _searchController.clear();
+                              provider.setSearchQuery('');
+                            },
+                          )
+                        : null,
+                  ),
+                ),
+              ),
+
+              // Conditional Body Content
+              if (hasNoUsers)
+                Expanded(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          isQueryEmpty
+                              ? Icons.people_outline
+                              : Icons.search_off,
+                          size: 80,
+                          color: Colors.grey,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          isQueryEmpty ? 'No users yet' : 'No matching users',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          isQueryEmpty
+                              ? 'Users will sync automatically from API'
+                              : 'Try a different search pattern',
+                          style: const TextStyle(color: Colors.grey),
+                        ),
+                        if (provider.isSyncing && isQueryEmpty)
+                          const Padding(
+                            padding: EdgeInsets.only(top: 16),
+                            child: CircularProgressIndicator(),
+                          ),
+                      ],
+                    ),
+                  ),
+                )
+              else ...[
+                // Status bar
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  color: Colors.deepPurple.shade50,
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.cloud_done,
+                        size: 16,
+                        color: Colors.green,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          isQueryEmpty
+                              ? '${displayUsers.length} users synced from API'
+                              : 'Matched ${displayUsers.length} users',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey[800],
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
-                    ),
-                    if (provider.isSyncing)
-                      Row(
-                        children: [
-                          const SizedBox(
-                            width: 12,
-                            height: 12,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Syncing...',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
+                      if (provider.isSyncing)
+                        Row(
+                          children: [
+                            const SizedBox(
+                              width: 12,
+                              height: 12,
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             ),
-                          ),
-                        ],
-                      ),
-                  ],
+                            const SizedBox(width: 6),
+                            Text(
+                              'Syncing...',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-              const Divider(height: 1),
-              // Users list
-              Expanded(
-                child: ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: provider.users.length,
-                  itemBuilder: (context, index) {
-                    final user = provider.users[index];
-                    return _buildUserCard(user);
-                  },
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(height: 12),
+                const Divider(height: 1),
+                // Users list
+                Expanded(
+                  child: ListView.separated(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: displayUsers.length,
+                    itemBuilder: (context, index) {
+                      final user = displayUsers[index];
+                      return _buildUserCard(user);
+                    },
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 12),
+                  ),
                 ),
-              ),
+              ],
             ],
           );
         },

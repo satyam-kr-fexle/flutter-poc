@@ -11,14 +11,30 @@ class UserProvider with ChangeNotifier {
   List<User> _users = [];
   bool _isLoading = false;
   bool _isSyncing = false;
+  bool _isAutoSyncRunning = false;
+  String _searchQuery = '';
   final Cron _cron = Cron();
 
   final UserDatabase _database = UserDatabase.instance;
   final UserSyncService _syncService = UserSyncService();
 
-  List<User> get users => _users;
+  List<User> get users {
+    final query = _searchQuery.toLowerCase().trim();
+    if (query.isEmpty) return _users;
+
+    return _users.where((user) {
+      return user.name.toLowerCase().contains(query);
+    }).toList();
+  }
+
   bool get isLoading => _isLoading;
   bool get isSyncing => _isSyncing;
+  String get searchQuery => _searchQuery;
+
+  void setSearchQuery(String query) {
+    _searchQuery = query;
+    notifyListeners();
+  }
 
   // Fetch users from local database
   Future<void> fetchUsers() async {
@@ -77,6 +93,9 @@ class UserProvider with ChangeNotifier {
 
   // Start automatic sync using cron
   Future<void> startAutoSync() async {
+    if (_isAutoSyncRunning) return;
+    _isAutoSyncRunning = true;
+
     // Don't sync immediately - only load from local storage
     // Cron job will handle syncing automatically
 

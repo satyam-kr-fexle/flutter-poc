@@ -28,8 +28,8 @@ class User {
   factory User.fromMap(Map<String, dynamic> map) {
     return User(
       id: map['id'] as int?,
-      name: map['name'] as String,
-      email: map['email'] as String,
+      name: (map['name'] as String?) ?? 'Unknown User',
+      email: (map['email'] as String?) ?? '',
       avatar: map['avatar'] as String?,
       needsSync: (map['needsSync'] ?? 0) == 1,
     );
@@ -42,11 +42,19 @@ class User {
 
   // Create User from JSON (from API)
   factory User.fromJson(Map<String, dynamic> json) {
+    // Handle DummyJSON format (firstName + lastName) or direct name
+    String fullName = 'Unknown User';
+    if (json.containsKey('name')) {
+      fullName = json['name'] as String;
+    } else if (json.containsKey('firstName')) {
+      fullName = '${json['firstName']} ${json['lastName'] ?? ''}'.trim();
+    }
+
     return User(
       id: json['id'] as int?,
-      name: json['name'] as String,
-      email: json['email'] as String,
-      avatar: json['avatar'] as String?,
+      name: fullName,
+      email: (json['email'] as String?) ?? '',
+      avatar: (json['image'] ?? json['avatar']) as String?,
       needsSync: false, // API users don't need sync
     );
   }
